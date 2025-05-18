@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>保育園持ち物ゲーム</title>
+  <title>キャラと食べ物で武器ゲット！</title>
   <style>
     body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f8ff; }
     h1 { color: #2a6ebb; }
-    .items { display: flex; justify-content: center; gap: 30px; margin: 40px 0; }
+    .select-group { margin: 30px 0; }
+    .items { display: flex; justify-content: center; gap: 30px; margin: 20px 0; }
     .item {
       border: 3px solid #aaa;
       border-radius: 16px;
@@ -21,9 +22,9 @@
       user-select: none;
     }
     .item.selected {
-      border: 3px solid #2a6ebb;
-      background: #e0f0ff;
-      box-shadow: 0 4px 16px #2a6ebb33;
+      border: 3px solid #ff9800;
+      background: #fff3e0;
+      box-shadow: 0 4px 16px #ff980033;
     }
     #result {
       font-size: 1.5em;
@@ -31,94 +32,121 @@
       color: #d2691e;
       min-height: 2em;
     }
-    button#reset {
-      margin-top: 30px;
-      padding: 10px 30px;
-      font-size: 1em;
-      border-radius: 8px;
-      border: none;
-      background: #2a6ebb;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button#reset:hover { background: #1a4e8a; }
+    button { margin: 20px 10px; padding: 10px 30px; font-size: 1em; border-radius: 8px; border: none; background: #2a6ebb; color: #fff; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1a4e8a; }
   </style>
 </head>
 <body>
-  <h1>ほいくえんのじゅんび！</h1>
-  <div class="items" id="items">
-    <!-- アイテムがここに表示されます -->
+  <h1>キャラと食べ物で武器ゲット！</h1>
+  <div class="select-group">
+    <div>キャラクターを選んでね</div>
+    <div class="items" id="characters"></div>
   </div>
-  <div id="result"></div>
-  <button id="decide">これにきめた！</button>
+  <div class="select-group">
+    <div>好きな食べ物を選んでね</div>
+    <div class="items" id="foods"></div>
+  </div>
+  <button id="decide">これに決めた！</button>
   <button id="reset" style="display:none;">もう一度</button>
+  <div id="result"></div>
+  <script src="weaponJudge.js"></script>
   <script>
-    // ゲームに使うアイテム一覧
-    const allItems = [
-      { name: 'タオル', emoji: '🧺' },
-      { name: 'れんらくちょう', emoji: '📒' },
-      { name: 'コップ', emoji: '🥤' },
-      { name: 'おもちゃ', emoji: '🧸' },
-      { name: 'おべんとう', emoji: '🍱' },
-      { name: 'くつ', emoji: '👟' },
-      { name: 'すいとう', emoji: '🍼' }
+    // キャラクターと食べ物のリスト
+    const characters = [
+      { name: 'ヒーロー', emoji: '🦸' },
+      { name: 'ねこ', emoji: '🐱' },
+      { name: 'ロボット', emoji: '🤖' },
+      { name: 'おばけ', emoji: '👻' }
     ];
-    const required = ['タオル', 'れんらくちょう', 'コップ'];
-    let selected = new Set();
+    const foods = [
+      { name: 'りんご', emoji: '🍎' },
+      { name: 'ハンバーガー', emoji: '🍔' },
+      { name: 'さかな', emoji: '🐟' },
+      { name: 'ケーキ', emoji: '🍰' }
+    ];
+    let selectedChar = null;
+    let selectedFood = null;
     let finished = false;
 
-    function renderItems() {
-      const itemsDiv = document.getElementById('items');
-      itemsDiv.innerHTML = '';
-      allItems.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'item' + (selected.has(item.name) ? ' selected' : '');
-        div.innerHTML = `<div style="font-size:2.5em;">${item.emoji}</div><div>${item.name}</div>`;
-        div.onclick = () => {
+    // キャラクター用の選択コールバック
+    // キャラクターを選択したときに呼ばれる。選択状態を更新し、キャラクターリストを再描画する。
+    function selectCharacter(name) {
+      selectedChar = name;
+      renderList(characters, selectedChar, 'characters', selectCharacter);
+    }
+    // 食べ物用の選択コールバック
+    // 食べ物を選択したときに呼ばれる。選択状態を更新し、食べ物リストを再描画する。
+    function selectFood(name) {
+      selectedFood = name;
+      renderList(foods, selectedFood, 'foods', selectFood);
+    }
+
+    // リスト（キャラ・食べ物）を描画する関数
+    // list: 表示するアイテム配列
+    // selected: 現在選択されているアイテム名
+    // containerId: 表示先のdivのID
+    // onSelect: アイテム選択時に呼ばれるコールバック
+    function renderList(list, selected, containerId, onSelect) {
+      const div = document.getElementById(containerId);
+      div.innerHTML = '';
+      // console.log('renderList', {containerId, selected});
+      list.forEach(item => {
+        const el = document.createElement('div');
+        const isSelected = selected === item.name;
+        // console.log('item', {itemName: item.name, isSelected, selected, itemName2: item.name});
+        el.className = 'item' + (isSelected ? ' selected' : '');
+        el.innerHTML = `<div style="font-size:2.5em;">${item.emoji}</div><div>${item.name}</div>`;
+        el.onclick = () => {
           if (finished) return;
-          if (selected.has(item.name)) {
-            selected.delete(item.name);
-          } else {
-            selected.add(item.name);
-          }
-          renderItems();
+          onSelect(item.name);
         };
-        itemsDiv.appendChild(div);
+        div.appendChild(el);
       });
     }
 
-    function checkResult() {
+    // 結果（武器）を表示する関数
+    // 選択されたキャラと食べ物の組み合わせに応じて武器を決定し、結果を表示する
+    function showResult() {
       const resultDiv = document.getElementById('result');
-      if (selected.size === 3) {
-        if (required.every(r => selected.has(r))) {
-          resultDiv.textContent = 'ゲームクリア！全部そろったよ！🎉';
-        } else {
-          resultDiv.textContent = 'ゲームオーバー…もう一度やってみよう！';
-        }
-        finished = true;
-        document.getElementById('reset').style.display = '';
-        document.getElementById('decide').style.display = 'none';
-      } else {
-        resultDiv.textContent = '3つ選んでね！';
+      if (!selectedChar || !selectedFood) {
+        resultDiv.textContent = 'キャラと食べ物を1つずつ選んでね！';
+        return;
       }
+      // weaponJudge.jsのgetWeaponを利用
+      const weapon = window.getWeapon
+        ? window.getWeapon(selectedChar, selectedFood)
+        : (typeof getWeapon === 'function' ? getWeapon(selectedChar, selectedFood) : null);
+      if (weapon) {
+        resultDiv.innerHTML = `君の武器は…<br><span style="font-size:2em;">${weapon.emoji}</span><br>${weapon.name}！`;
+      } else {
+        resultDiv.textContent = '武器が決まりませんでした。';
+      }
+      finished = true;
+      document.getElementById('decide').style.display = 'none';
+      document.getElementById('reset').style.display = '';
     }
 
+    // 「これに決めた！」ボタンのクリックイベント
+    // 結果を表示する
     document.getElementById('decide').onclick = () => {
-      if (!finished) checkResult();
+      if (!finished) showResult();
     };
-
+    // 「もう一度」ボタンのクリックイベント
+    // 選択状態と表示をリセットする
     document.getElementById('reset').onclick = () => {
-      selected = new Set();
+      selectedChar = null;
+      selectedFood = null;
       finished = false;
-      renderItems();
       document.getElementById('result').textContent = '';
-      document.getElementById('reset').style.display = 'none';
       document.getElementById('decide').style.display = '';
+      document.getElementById('reset').style.display = 'none';
+      renderList(characters, selectedChar, 'characters', selectCharacter);
+      renderList(foods, selectedFood, 'foods', selectFood);
     };
 
-    // 初期表示
-    renderItems();
+    // 初期表示（ページ読み込み時にリストを描画）
+    renderList(characters, selectedChar, 'characters', selectCharacter);
+    renderList(foods, selectedFood, 'foods', selectFood);
   </script>
 </body>
 </html>
