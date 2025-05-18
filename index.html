@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保育園持ち物ゲーム</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f8ff; }
+    h1 { color: #2a6ebb; }
+    .items { display: flex; justify-content: center; gap: 30px; margin: 40px 0; }
+    .item {
+      border: 3px solid #aaa;
+      border-radius: 16px;
+      width: 120px; height: 120px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #fff;
+      cursor: pointer;
+      font-size: 1.2em;
+      transition: border 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #0001;
+      user-select: none;
+    }
+    .item.selected {
+      border: 3px solid #2a6ebb;
+      background: #e0f0ff;
+      box-shadow: 0 4px 16px #2a6ebb33;
+    }
+    #result {
+      font-size: 1.5em;
+      margin-top: 30px;
+      color: #d2691e;
+      min-height: 2em;
+    }
+    button#reset {
+      margin-top: 30px;
+      padding: 10px 30px;
+      font-size: 1em;
+      border-radius: 8px;
+      border: none;
+      background: #2a6ebb;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button#reset:hover { background: #1a4e8a; }
+  </style>
+</head>
+<body>
+  <h1>ほいくえんのじゅんび！</h1>
+  <div class="items" id="items">
+    <!-- アイテムがここに表示されます -->
+  </div>
+  <div id="result"></div>
+  <button id="decide">これにきめた！</button>
+  <button id="reset" style="display:none;">もう一度</button>
+  <script>
+    // ゲームに使うアイテム一覧
+    const allItems = [
+      { name: 'タオル', emoji: '🧺' },
+      { name: 'れんらくちょう', emoji: '📒' },
+      { name: 'コップ', emoji: '🥤' },
+      { name: 'おもちゃ', emoji: '🧸' },
+      { name: 'おべんとう', emoji: '🍱' },
+      { name: 'くつ', emoji: '👟' },
+      { name: 'すいとう', emoji: '🍼' }
+    ];
+    const required = ['タオル', 'れんらくちょう', 'コップ'];
+    let selected = new Set();
+    let finished = false;
+
+    function renderItems() {
+      const itemsDiv = document.getElementById('items');
+      itemsDiv.innerHTML = '';
+      allItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item' + (selected.has(item.name) ? ' selected' : '');
+        div.innerHTML = `<div style="font-size:2.5em;">${item.emoji}</div><div>${item.name}</div>`;
+        div.onclick = () => {
+          if (finished) return;
+          if (selected.has(item.name)) {
+            selected.delete(item.name);
+          } else {
+            selected.add(item.name);
+          }
+          renderItems();
+        };
+        itemsDiv.appendChild(div);
+      });
+    }
+
+    function checkResult() {
+      const resultDiv = document.getElementById('result');
+      if (selected.size === 3) {
+        if (required.every(r => selected.has(r))) {
+          resultDiv.textContent = 'ゲームクリア！全部そろったよ！🎉';
+        } else {
+          resultDiv.textContent = 'ゲームオーバー…もう一度やってみよう！';
+        }
+        finished = true;
+        document.getElementById('reset').style.display = '';
+        document.getElementById('decide').style.display = 'none';
+      } else {
+        resultDiv.textContent = '3つ選んでね！';
+      }
+    }
+
+    document.getElementById('decide').onclick = () => {
+      if (!finished) checkResult();
+    };
+
+    document.getElementById('reset').onclick = () => {
+      selected = new Set();
+      finished = false;
+      renderItems();
+      document.getElementById('result').textContent = '';
+      document.getElementById('reset').style.display = 'none';
+      document.getElementById('decide').style.display = '';
+    };
+
+    // 初期表示
+    renderItems();
+  </script>
+</body>
+</html>
